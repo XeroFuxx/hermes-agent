@@ -13,6 +13,7 @@ import {
   hasExistingGitCheckout,
   installedAgentInstallScript,
   installRefForStamp,
+  provisioningInstallScriptUrl,
   isPinnedCommit,
   resolveInstallScript,
   resolveMarkerPinnedCommit,
@@ -108,6 +109,15 @@ test('existing-checkout bootstrap args keep branch but skip the packaged commit 
       pinCommit: false
     }),
     ['--dir', '/tmp/hermes-agent', '--hermes-home', '/tmp/hermes', '--branch', 'main']
+  )
+})
+
+test('provisioning installer URL is pinned to the authorized HTTPS artifact repository', () => {
+  const commit = 'b'.repeat(40)
+
+  assert.equal(
+    provisioningInstallScriptUrl(commit),
+    `https://raw.githubusercontent.com/XeroFuxx/hermes-agent/${commit}/scripts/${SCRIPT_NAME}`
   )
 })
 
