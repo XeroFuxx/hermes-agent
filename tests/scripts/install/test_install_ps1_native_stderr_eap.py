@@ -34,17 +34,15 @@ def _assert_relaxed_call(text: str, command_pattern: str) -> None:
     )
 
 
-def test_repository_stage_relieves_eap_for_ssh_and_https_git_clone() -> None:
+def test_repository_stage_relieves_eap_for_https_clone_without_ssh_provisioning() -> None:
     text = _install_ps1()
     assert "function Invoke-NativeWithRelaxedErrorAction" in text
     _assert_relaxed_call(
         text,
-        r"git -c windows\.appendAtomically=false clone --depth 1 --branch \$Branch \$RepoUrlSsh \$InstallDir",
-    )
-    _assert_relaxed_call(
-        text,
         r"git -c windows\.appendAtomically=false clone --depth 1 --branch \$Branch \$RepoUrlHttps \$InstallDir",
     )
+    assert "$RepoUrlSsh" not in text
+    assert "GIT_SSH_COMMAND" not in text
 
 
 def test_dependency_installs_relax_eap() -> None:
