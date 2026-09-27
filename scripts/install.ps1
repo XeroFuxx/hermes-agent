@@ -2489,17 +2489,23 @@ function Install-Repository {
         # config lock files) due to antivirus, OneDrive, or NTFS filter drivers.
         # The -c flag injects config before any file I/O occurs.
         Write-Info "Configuring git for Windows compatibility..."
-        $env:GIT_CONFIG_COUNT = "1"
+        # Enable Win32 long paths for this clone before Git's checkout runs.
+        # Setting it after clone is too late: deep install destinations can hit
+        # Filename too long while clone materializes the working tree.
+        $env:GIT_CONFIG_COUNT = "2"
         $env:GIT_CONFIG_KEY_0 = "windows.appendAtomically"
         $env:GIT_CONFIG_VALUE_0 = "false"
+        $env:GIT_CONFIG_KEY_1 = "core.longpaths"
+        $env:GIT_CONFIG_VALUE_1 = "true"
         git config --global windows.appendAtomically false 2>$null
+        git config --global core.longpaths true 2>$null
 
         # HTTPS is the normal end-user path. SSH remains available only to
         # developers who manually use their configured Git remotes; provisioning
         # never asks for SSH credentials or host-key setup.
         Write-Info "Cloning over HTTPS..."
         try {
-            Invoke-NativeWithRelaxedErrorAction { git -c windows.appendAtomically=false clone --depth 1 --branch $Branch $RepoUrlHttps $InstallDir }
+            Invoke-NativeWithRelaxedErrorAction { git -c windows.appendAtomically=false -c core.longpaths=true clone --depth 1 --branch $Branch $RepoUrlHttps $InstallDir }
             if ($LASTEXITCODE -eq 0) { $cloneSuccess = $true }
         } catch { }
 
@@ -2541,8 +2547,9 @@ function Install-Repository {
                     # (#50823 / #61657). Fetch the requested ref and force-check
                     # it out (-f) so untracked ZIP files cannot block checkout.
                     Push-Location $InstallDir
-                    git -c windows.appendAtomically=false init 2>$null
+                    git -c windows.appendAtomically=false -c core.longpaths=true init 2>$null
                     git -c windows.appendAtomically=false config windows.appendAtomically false 2>$null
+                    git -c windows.appendAtomically=false config core.longpaths true 2>$null
                     # Pin autocrlf=false BEFORE the checkout below. Git for Windows
                     # defaults to core.autocrlf=true, which would renormalize the
                     # repo's LF text files to CRLF in the working tree during
@@ -2605,6 +2612,7 @@ function Install-Repository {
     # Set per-repo config (harmless if it fails)
     Push-Location $InstallDir
     git -c windows.appendAtomically=false config windows.appendAtomically false 2>$null
+    git -c windows.appendAtomically=false config core.longpaths true 2>$null
     # Pin autocrlf=false on the managed clone so git never renormalizes the
     # repo's LF text files to CRLF in the working tree. Without this, the very
     # next `hermes update` checkout aborts on a "dirty" tree the user never

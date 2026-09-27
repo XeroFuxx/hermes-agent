@@ -39,8 +39,11 @@ def test_repository_stage_relieves_eap_for_https_clone_without_ssh_provisioning(
     assert "function Invoke-NativeWithRelaxedErrorAction" in text
     _assert_relaxed_call(
         text,
-        r"git -c windows\.appendAtomically=false clone --depth 1 --branch \$Branch \$RepoUrlHttps \$InstallDir",
+        r"git -c windows\.appendAtomically=false -c core\.longpaths=true clone --depth 1 --branch \$Branch \$RepoUrlHttps \$InstallDir",
     )
+    assert '$env:GIT_CONFIG_COUNT = "2"' in text
+    assert '$env:GIT_CONFIG_KEY_1 = "core.longpaths"' in text
+    assert '$env:GIT_CONFIG_VALUE_1 = "true"' in text
     assert "$RepoUrlSsh" not in text
     assert "GIT_SSH_COMMAND" not in text
 
